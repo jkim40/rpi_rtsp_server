@@ -4,16 +4,25 @@ import os
 import argparse
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
-pixhawk_pipe_isarmed = True #this will change to be dynamically attained
+
+# this will change to be dynamically attained
+pixhawk_pipe_isarmed = True
 
 def main(cam_options):
+
+    # 3s delay to ensure ffserver completely starts before this python script gets rolling.
+    # The reason for they are both called in background at boot.
+    time.sleep(3)
+
+    # initialize stream subprocess handle
     stream_sp = None
+
     if cam_options.record != None:
-        #check if file path directory exists
+        # check if file path directory exists
         if os.path.isdir(cam_options.record) == True:
             print "Recording local copy to: " + cam_options.record
         else :
-            #value error is raised, so it we should not proceed further
+            # value error is raised, so it we should not proceed further
             raise ValueError("The requested directory is invalid or does not exist")
 
     while True:
@@ -22,7 +31,7 @@ def main(cam_options):
         if pixhawk_pipe_isarmed == True:
 
             print "Pix hawk is armed. Verifying video device is available ... "
-            #verify that video device is available
+            # verify that video device is available
 
             if os.path.exists("/dev/video0"):
 
