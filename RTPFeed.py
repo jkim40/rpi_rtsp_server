@@ -27,9 +27,26 @@ def main(cam_options):
             if os.path.exists("/dev/video0"):
 
                 print ("/dev/video0 is available. Beginning video stream ... ")
+                print ("Stream options loaded from: /home/rpi_rtsp_server/ffserver.conf")
 
-                ffmpeg_start_command =  ['ffmpeg','-f','v4l2','-input_format','mjpeg','-i','/dev/video0',\
-                                         '-preset','ultrafast','-tune','zerolatency','http://localhost:8090/see3cam.ffm']
+                if cam_options.verbose:
+                    ffmpeg_start_command =  ['ffmpeg',\
+                                             '-f','v4l2',\
+                                             '-input_format','mjpeg',\
+                                             '-i','/dev/video0', \
+                                             '-preset','ultrafast',\
+                                             '-tune','zerolatency',\
+                                             'http://localhost:8090/see3cam.ffm']
+                else:
+                    ffmpeg_start_command =  ['ffmpeg',\
+                                             '-loglevel','panic',\
+                                             '-f','v4l2',\
+                                             '-input_format','mjpeg',\
+                                             '-i','/dev/video0',\
+                                             '-preset','ultrafast',\
+                                             '-tune','zerolatency',\
+                                             'http://localhost:8090/see3cam.ffm']
+
 
                 stream_sp = subprocess.Popen(ffmpeg_start_command)
 
@@ -45,8 +62,9 @@ def main(cam_options):
             time.sleep(1) # sleep for one second, and then try again
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "rpi video stream")
-    parser.add_argument("-r","--record", help="Directory to record local copy of stream", metavar = '')
+    parser = argparse.ArgumentParser(description= "rpi video stream")
+    parser.add_argument("-r","--record", help="Directory to record local copy of stream", metavar ="")
+    parser.add_argument("-v","--verbose", help="Verbosely print out state of ffmpeg", action="store_true")
     # To do:
     # -add IP address and port
     # -add feed name as dictated by the ffserver configuration
