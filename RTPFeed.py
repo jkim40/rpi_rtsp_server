@@ -4,63 +4,56 @@ import os
 import argparse
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
+pixhawk_pipe_isarmed = True #this will change to be dynamically attained
 
-class See3CamFeed:
+def main(cam_options):
+    stream_sp = None
+    if cam_options.record != None:
+        #check if file path directory exists
+        if os.path.isdir(cam_options.record) == True:
+            print "Recording local copy to: " + cam_options.record
+        else :
+            #value error is raised, so it we should not proceed further
+            raise ValueError("The requested directory is invalid or does not exist")
 
-    def __init__(self):
-        self.server_sp = None
-        self.stream_sp = None
-
-
-    def start_server(self, ffmpeg_config_path=CUR_DIR + "/ffserver.conf"):
-
-        #default ffserver configuration: CUR_DIR/ffserver.conf
-        self.server_sp = subprocess.Popen("ffserver -f " + ffmpeg_config_path, stdin = subprocess.PIPE,
-                                          stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-
-    def start_stream(self):
-
-        # For now, this will have to do, but in the future, this will have to change depending on how video cameras are
-        # read and presented in the file system i.e. the /dev/video0 may need to be dynamically determined
-        self.stream_sp = subprocess.Popen("ffmpeg -i /dev/video0 -c:v libx264 -preset ultrafast -tune zerolatency " +
-                                          "http://localhost:8090/see3cam.ffm")
-
-    def close_server(self):
-        self.server_sp.terminate()
-
-    def close_stream(self):
-        self.sream_sp.terminate()
-
-
-def main(test_args):
-    print "Loading ffserver.conf at: \n" + test_args
-
-    #initialize see3camfeed here, with anything else you might need
-
-    #while True:
+    while True:
         # check if the flight controller is armed here
-        # if it is, then start up the see3cam feed
-        # if(pixhawk_pipe.isarmed):
-            # while True:
-                # check that the server and feed are both operational.
-                # if they are operational, do nothing
-                # else kill any other operatioanl subprocess if any, then exit
-                    #break
-        # else not armed:
-            #time.sleep(1) # sleep for one second, and then try again
+        # if it is, then try to start up the see3cam feed
+        if pixhawk_pipe_isarmed == True:
 
+            print "Pix hawk is armed. Verifying video device is available ... "
+            #verify that video device is available
 
+            if os.path.exists("/dev/video0"):
+
+                print ("/dev/video0 is available. Beginning video stream ... ")
+
+                ffmpeg_start_command =  ['ffmpeg','-f','v4l2','-input_format','mjpeg','-i','/dev/video0',\
+                                         '-preset','ultrafast','-tune','zerolatency','http://localhost:8090/see3cam.ffm']
+
+                stream_sp = subprocess.Popen(ffmpeg_start_command)
+
+                while stream_sp.poll() == None:
+                    # wait while rpi is streaming
+                    time.sleep(1)
+
+                exit(0)
+            else:
+                print ("/dev/video0 not available. Connect video device, then restart raspberry pi")
+                exit(1)
+        else :
+            time.sleep(1) # sleep for one second, and then try again
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = 'see3cam stream')
-    parser.add_argument('ffserver_fp', help='full path to ffserver configruation')
+    parser = argparse.ArgumentParser(description = "rpi video stream")
+    parser.add_argument("-r","--record", help="Directory to record local copy of stream", metavar = '')
     # To do:
     # -add IP address and port
     # -add feed name as dictated by the ffserver configuration
     # -add
 
     args = parser.parse_args()
-    main(args.ffserver_fp)
+    main(args)
 
 
 
